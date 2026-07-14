@@ -1,13 +1,15 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import DOMPurify from 'dompurify'
-import { marked } from 'marked'
+import ArticleDetailSkeleton from '@/components/ArticleDetailSkeleton.vue'
+import ArticleToc from '@/components/ArticleToc.vue'
 import { createComment, deleteComment, listComments } from '@/api/comments'
 import { fetchLikeStatus, toggleLike } from '@/api/likes'
 import { fetchArticle } from '@/api/articles'
+import { useCodeHighlight } from '@/composables/useCodeHighlight'
 import { formatDate, categoryEmoji } from '@/utils/format'
 import { getUser, isAdmin, isLoggedIn } from '@/utils/auth'
+import { renderArticleMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
 
@@ -25,15 +27,16 @@ const commentText = ref('')
 const commentSubmitting = ref(false)
 const commentError = ref('')
 
+const contentEl = ref(null)
+
 const publishedAt = computed(() => formatDate(article.value?.publishedAt))
 const emoji = computed(() => categoryEmoji(article.value?.category?.name))
 
-const renderedContent = computed(() => {
-  const raw = article.value?.content
-  if (!raw) return ''
-  const html = marked.parse(raw, { async: false })
-  return DOMPurify.sanitize(html)
-})
+const rendered = computed(() => renderArticleMarkdown(article.value?.content || ''))
+const renderedHtml = computed(() => rendered.value.html)
+const tocItems = computed(() => rendered.value.toc)
+
+useCodeHighlight(renderedHtml, () => contentEl.value)
 
 const currentUser = computed(() => getUser())
 
@@ -137,7 +140,7 @@ watch(
 
 <template>
   <section class="page content-article">
-    <p v-if="loading" class="state">加载中…</p>
+    <ArticleDetailSkeleton v-if="loading" />
 
     <div v-else-if="error" class="error-panel">
       <h1>找不到这篇文章</h1>
@@ -176,7 +179,9 @@ watch(
         </li>
       </ul>
 
-      <div class="content markdown-body" v-html="renderedContent" />
+      <ArticleToc :items="tocItems" />
+
+      <div ref="contentEl" class="content markdown-body" v-html="renderedHtml" />
 
       <div class="actions">
         <button
@@ -343,6 +348,7 @@ watch(
 .content :deep(h3) {
   font-family: var(--font-display);
   margin: 1.2em 0 0.6em;
+  scroll-margin-top: calc(var(--header-height) + 12px);
 }
 
 .content :deep(p) {
@@ -351,14 +357,26 @@ watch(
 
 .content :deep(pre) {
   overflow-x: auto;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 8px;
-  background: #f8f9fa;
+  background: #f6f8fa;
+  border: 1px solid var(--border-soft);
+}
+
+.content :deep(pre code.hljs) {
+  background: transparent;
+  padding: 0;
 }
 
 .content :deep(code) {
   font-family: ui-monospace, monospace;
   font-size: 0.92em;
+}
+
+.content :deep(:not(pre) > code) {
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: rgba(45, 52, 54, 0.06);
 }
 
 .actions {

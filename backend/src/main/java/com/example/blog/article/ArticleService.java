@@ -67,7 +67,7 @@ public class ArticleService {
             spec = spec.and(ArticleSpecs.hasTagId(tagId));
         }
         if (keyword != null && !keyword.isBlank()) {
-            spec = spec.and(ArticleSpecs.titleContains(keyword.trim()));
+            spec = spec.and(ArticleSpecs.keywordMatches(keyword.trim()));
         }
         if (yearMonth != null && !yearMonth.isBlank()) {
             spec = spec.and(parseYearMonthSpec(yearMonth.trim()));
@@ -80,6 +80,13 @@ public class ArticleService {
                 pageSize,
                 result.getTotalElements()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Article> listPublishedForFeed(int limit) {
+        int pageSize = limit < 1 ? DEFAULT_SIZE : Math.min(limit, MAX_SIZE);
+        PageRequest page = PageRequest.of(0, pageSize, Sort.by(Sort.Direction.DESC, "publishedAt"));
+        return articleRepository.findAll(ArticleSpecs.publiclyVisible(LocalDateTime.now()), page).getContent();
     }
 
     @Transactional

@@ -16,3 +16,6 @@ blog:
   jwt:
     secret: test-jwt-secret-key-at-least-32-bytes-long
     expire-hours: 2
+  site:
+    base-url: http://localhost:5173
+    feed-limit: 20

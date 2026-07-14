@@ -13,12 +13,14 @@
     "axios": "^1.18.1",
     "dompurify": "^3.4.12",
     "element-plus": "^2.14.3",
+    "highlight.js": "^11.11.1",
     "marked": "^18.0.6",
     "vue": "^3.5.39",
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
+    "jsdom": "^29.1.1",
     "vite": "^8.1.1"
   }
 }

@@ -91,7 +91,8 @@ public class ArticleResponse {
         );
     }
 
-    private static String resolveSummary(Article article) {
+    /** Public list / RSS share the same summary fallback rules. */
+    public static String resolveSummary(Article article) {
         if (article.getSummary() != null && !article.getSummary().isBlank()) {
             return article.getSummary().trim();
         }

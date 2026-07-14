@@ -1,0 +1,11 @@
+关联远程并推送
+把下面的 你的用户名 和 仓库名 换成你的：
+
+git remote add origin https://github.com/你的用户名/仓库名.git
+git push -u origin main
+之后日常同步只需：
+
+
+git add .
+git commit -m "说明这次改了什么"
+git push

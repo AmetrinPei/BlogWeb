@@ -32,9 +32,21 @@ final class ArticleSpecs {
         };
     }
 
-    static Specification<Article> titleContains(String keyword) {
+    /**
+     * Case-insensitive substring match on title, summary, or content (OR).
+     * Null summary does not match via that branch.
+     */
+    static Specification<Article> keywordMatches(String keyword) {
         String pattern = "%" + keyword.toLowerCase() + "%";
-        return (root, query, cb) -> cb.like(cb.lower(root.get("title")), pattern);
+        return (root, query, cb) -> {
+            var titleLike = cb.like(cb.lower(root.get("title")), pattern);
+            var summaryLike = cb.and(
+                    cb.isNotNull(root.get("summary")),
+                    cb.like(cb.lower(root.get("summary")), pattern)
+            );
+            var contentLike = cb.like(cb.lower(root.get("content")), pattern);
+            return cb.or(titleLike, summaryLike, contentLike);
+        };
     }
 
     static Specification<Article> recommendedTrue() {

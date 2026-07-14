@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ArticleCard from '@/components/ArticleCard.vue'
+import ArticleListSkeleton from '@/components/ArticleListSkeleton.vue'
 import { fetchArticles } from '@/api/articles'
 import { fetchCategories } from '@/api/categories'
 import { fetchTags } from '@/api/tags'
@@ -82,6 +83,17 @@ function clearFilters() {
   router.replace({ name: 'articles', query: {} })
 }
 
+function clearKeyword() {
+  keywordInput.value = ''
+  replaceQuery({ keyword: '', page: 1 })
+}
+
+const hasKeyword = computed(() => Boolean(keyword.value.trim()))
+const hasOtherFilters = computed(
+  () => Boolean(categoryId.value || tagId.value || yearMonth.value),
+)
+const isEmpty = computed(() => !loading.value && !error.value && articles.value.length === 0)
+
 function goPage(target) {
   if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
   replaceQuery({ page: target })
@@ -151,7 +163,7 @@ watch(
       <h1>文章</h1>
       <p class="muted">
         <template v-if="yearMonth">归档：{{ yearMonth }}</template>
-        <template v-else>按时间倒序浏览，支持分类、标签与标题关键词筛选。</template>
+        <template v-else>按时间倒序浏览，支持分类、标签，以及标题、摘要或正文关键词搜索。</template>
       </p>
     </header>
 
@@ -181,7 +193,7 @@ watch(
         <input
           v-model="keywordInput"
           type="search"
-          placeholder="搜索标题…"
+          placeholder="搜索标题、摘要或正文…"
           maxlength="100"
         />
       </label>
@@ -192,21 +204,37 @@ watch(
       </div>
     </form>
 
-    <p v-if="loading" class="state">加载中…</p>
+    <ArticleListSkeleton v-if="loading" />
     <p v-else-if="error" class="state error">{{ error }}</p>
-    <p v-else-if="!articles.length" class="state">没有找到相关文章。</p>
+    <div v-else-if="isEmpty && hasKeyword" class="empty empty-search">
+      <p class="empty-title">没有找到与「{{ keyword.trim() }}」匹配的文章</p>
+      <p class="empty-desc">试试其他关键词，或清空条件继续浏览。</p>
+      <div class="empty-actions">
+        <button class="btn-primary" type="button" @click="clearKeyword">清空关键词</button>
+        <button class="btn-ghost" type="button" @click="clearFilters">清空全部筛选</button>
+      </div>
+    </div>
+    <div v-else-if="isEmpty" class="empty empty-generic">
+      <p class="empty-title">
+        {{ hasOtherFilters ? '当前筛选下暂无文章' : '暂无文章' }}
+      </p>
+      <p v-if="hasOtherFilters" class="empty-desc">可以换个分类、标签或清空筛选后再看。</p>
+      <div v-if="hasOtherFilters" class="empty-actions">
+        <button class="btn-ghost" type="button" @click="clearFilters">清空筛选</button>
+      </div>
+    </div>
     <div v-else class="list">
       <ArticleCard v-for="item in articles" :key="item.id" :article="item" />
     </div>
 
-    <nav v-if="totalPages > 1" class="pager" aria-label="分页">
-      <button type="button" :disabled="page <= 1 || loading" @click="goPage(page - 1)">
+    <nav v-if="!loading && !error && totalPages > 1" class="pager" aria-label="分页">
+      <button type="button" :disabled="page <= 1" @click="goPage(page - 1)">
         上一页
       </button>
       <span class="pager__info">第 {{ page }} / {{ totalPages }} 页 · 共 {{ total }} 篇</span>
       <button
         type="button"
-        :disabled="page >= totalPages || loading"
+        :disabled="page >= totalPages"
         @click="goPage(page + 1)"
       >
         下一页
@@ -311,6 +339,41 @@ h1 {
 
 .state.error {
   color: #d63031;
+}
+
+.empty {
+  padding: 36px 28px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-soft);
+  text-align: center;
+}
+
+.empty-search {
+  background: rgba(179, 136, 255, 0.06);
+  border-color: rgba(179, 136, 255, 0.2);
+}
+
+.empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.empty-desc {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .pager {

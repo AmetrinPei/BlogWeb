@@ -25,6 +25,9 @@ blog:
   jwt:
     secret: ${JWT_SECRET:blog-mvp-jwt-secret-key-change-me-32bytes-min}
     expire-hours: 2
+  site:
+    base-url: ${BLOG_SITE_BASE_URL:http://localhost:5173}
+    feed-limit: ${BLOG_SITE_FEED_LIMIT:20}
 
 logging:
   level:

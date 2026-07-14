@@ -2,6 +2,7 @@ package com.example.blog;
 
 import com.example.blog.article.Article;
 import com.example.blog.article.ArticleRepository;
+import com.example.blog.article.ArticleStatus;
 import com.example.blog.category.Category;
 import com.example.blog.category.CategoryRepository;
 import com.example.blog.tag.Tag;
@@ -60,9 +61,11 @@ class ArticlePublicTests {
             saveArticle(
                     "文章-" + i,
                     "内容" + i,
+                    null,
                     categoryJava,
                     Set.of(tagSpring),
-                    LocalDateTime.of(2026, 1, i, 10, 0)
+                    LocalDateTime.of(2026, 1, i, 10, 0),
+                    ArticleStatus.PUBLISHED
             );
         }
 
@@ -85,9 +88,11 @@ class ArticlePublicTests {
             saveArticle(
                     "分页-" + i,
                     "内容",
+                    null,
                     categoryJava,
                     Set.of(),
-                    LocalDateTime.of(2026, 2, i, 10, 0)
+                    LocalDateTime.of(2026, 2, i, 10, 0),
+                    ArticleStatus.PUBLISHED
             );
         }
 
@@ -102,9 +107,9 @@ class ArticlePublicTests {
 
     @Test
     void listFiltersByCategoryTagAndKeyword() throws Exception {
-        saveArticle("Spring Boot 入门", "a", categoryJava, Set.of(tagSpring), LocalDateTime.of(2026, 3, 1, 10, 0));
-        saveArticle("Vue 组件设计", "b", categoryJava, Set.of(tagVue), LocalDateTime.of(2026, 3, 2, 10, 0));
-        saveArticle("生活随笔", "c", categoryLife, Set.of(tagVue), LocalDateTime.of(2026, 3, 3, 10, 0));
+        saveArticle("Spring Boot 入门", "a", null, categoryJava, Set.of(tagSpring), LocalDateTime.of(2026, 3, 1, 10, 0), ArticleStatus.PUBLISHED);
+        saveArticle("Vue 组件设计", "b", null, categoryJava, Set.of(tagVue), LocalDateTime.of(2026, 3, 2, 10, 0), ArticleStatus.PUBLISHED);
+        saveArticle("生活随笔", "c", null, categoryLife, Set.of(tagVue), LocalDateTime.of(2026, 3, 3, 10, 0), ArticleStatus.PUBLISHED);
 
         mockMvc.perform(get("/api/articles").param("categoryId", categoryJava.getId().toString()))
                 .andExpect(jsonPath("$.code").value(0))
@@ -127,9 +132,81 @@ class ArticlePublicTests {
     }
 
     @Test
+    void keywordMatchesTitleSummaryOrContentAndHidesDraft() throws Exception {
+        saveArticle(
+                "AlphaOnlyTitle article",
+                "plain body without marker",
+                null,
+                categoryJava,
+                Set.of(),
+                LocalDateTime.of(2026, 5, 1, 10, 0),
+                ArticleStatus.PUBLISHED
+        );
+        saveArticle(
+                "summary-only title",
+                "plain body",
+                "contains BetaOnlySummary here",
+                categoryJava,
+                Set.of(tagSpring),
+                LocalDateTime.of(2026, 5, 2, 10, 0),
+                ArticleStatus.PUBLISHED
+        );
+        saveArticle(
+                "body-only title",
+                "markdown with GammaOnlyBody token",
+                null,
+                categoryJava,
+                Set.of(tagVue),
+                LocalDateTime.of(2026, 5, 3, 10, 0),
+                ArticleStatus.PUBLISHED
+        );
+        saveArticle(
+                "draft with GammaOnlyBody",
+                "GammaOnlyBody in draft",
+                null,
+                categoryJava,
+                Set.of(),
+                LocalDateTime.of(2026, 5, 4, 10, 0),
+                ArticleStatus.DRAFT
+        );
+
+        mockMvc.perform(get("/api/articles").param("keyword", "AlphaOnlyTitle"))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].title").value("AlphaOnlyTitle article"));
+
+        mockMvc.perform(get("/api/articles").param("keyword", "BetaOnlySummary"))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].title").value("summary-only title"));
+
+        mockMvc.perform(get("/api/articles").param("keyword", "GammaOnlyBody"))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].title").value("body-only title"));
+
+        mockMvc.perform(get("/api/articles").param("keyword", "NoMatchZZZ"))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(0))
+                .andExpect(jsonPath("$.data.items", hasSize(0)));
+
+        mockMvc.perform(get("/api/articles")
+                        .param("keyword", "BetaOnlySummary")
+                        .param("tagId", tagSpring.getId().toString()))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(1));
+
+        mockMvc.perform(get("/api/articles")
+                        .param("keyword", "BetaOnlySummary")
+                        .param("tagId", tagVue.getId().toString()))
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    @Test
     void listExcludesFuturePublishedArticles() throws Exception {
-        saveArticle("已发布", "now", categoryJava, Set.of(), LocalDateTime.now().minusDays(1));
-        saveArticle("未来发布", "future", categoryJava, Set.of(), LocalDateTime.now().plusDays(3));
+        saveArticle("已发布", "now", null, categoryJava, Set.of(), LocalDateTime.now().minusDays(1), ArticleStatus.PUBLISHED);
+        saveArticle("未来发布", "future", null, categoryJava, Set.of(), LocalDateTime.now().plusDays(3), ArticleStatus.PUBLISHED);
 
         mockMvc.perform(get("/api/articles"))
                 .andExpect(jsonPath("$.code").value(0))
@@ -142,9 +219,11 @@ class ArticlePublicTests {
         Article article = saveArticle(
                 "详情文章",
                 "完整正文内容",
+                null,
                 categoryJava,
                 Set.of(tagSpring, tagVue),
-                LocalDateTime.of(2026, 4, 1, 12, 0)
+                LocalDateTime.of(2026, 4, 1, 12, 0),
+                ArticleStatus.PUBLISHED
         );
 
         mockMvc.perform(get("/api/articles/" + article.getId()))
@@ -161,9 +240,11 @@ class ArticlePublicTests {
         Article future = saveArticle(
                 "未到发布时间",
                 "hidden",
+                null,
                 categoryJava,
                 Set.of(),
-                LocalDateTime.now().plusDays(1)
+                LocalDateTime.now().plusDays(1),
+                ArticleStatus.PUBLISHED
         );
 
         mockMvc.perform(get("/api/articles/" + future.getId()))
@@ -180,16 +261,20 @@ class ArticlePublicTests {
     private Article saveArticle(
             String title,
             String content,
+            String summary,
             Category category,
             Set<Tag> tags,
-            LocalDateTime publishedAt
+            LocalDateTime publishedAt,
+            ArticleStatus status
     ) {
         Article article = new Article();
         article.setTitle(title);
         article.setContent(content);
+        article.setSummary(summary);
         article.setCategory(category);
         article.setTags(tags);
         article.setPublishedAt(publishedAt);
+        article.setStatus(status);
         return articleRepository.saveAndFlush(article);
     }
 

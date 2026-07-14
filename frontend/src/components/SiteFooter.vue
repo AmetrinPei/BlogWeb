@@ -20,6 +20,11 @@ const { site } = useSiteSettings()
           {{ item.label }}
         </a>
       </div>
+      <p class="feed-row">
+        <a class="feed-link" href="/feed.xml" target="_blank" rel="noopener noreferrer">
+          RSS 订阅
+        </a>
+      </p>
       <p class="copy">© {{ new Date().getFullYear() }} {{ site.name }}</p>
     </div>
   </footer>
@@ -67,6 +72,21 @@ const { site } = useSiteSettings()
   color: var(--text);
   text-decoration: none;
   font-size: 0.9rem;
+}
+
+.feed-row {
+  margin: 0;
+}
+
+.feed-link {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.feed-link:hover {
+  color: var(--text);
 }
 
 .copy {
