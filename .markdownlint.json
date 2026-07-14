@@ -1,0 +1,7 @@
+{
+  "default": true,
+  "MD040": false,
+  "MD060": {
+    "style": "any"
+  }
+}

@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: blog
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/blog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: root
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+blog:
+  admin:
+    username: admin
+    password: ${ADMIN_PASSWORD:admin123}
+  jwt:
+    secret: ${JWT_SECRET:blog-mvp-jwt-secret-key-change-me-32bytes-min}
+    expire-hours: 2
+
+logging:
+  level:
+    root: INFO
+    com.example.blog: DEBUG
