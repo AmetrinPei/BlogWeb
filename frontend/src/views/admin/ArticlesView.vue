@@ -8,9 +8,10 @@ import {
   fetchAdminArticles,
   updateAdminArticle,
 } from '@/api/adminArticles'
+import { uploadMedia } from '@/api/adminMedia'
 import { fetchCategories } from '@/api/categories'
 import { fetchTags } from '@/api/tags'
-import { formatDate } from '@/utils/format'
+import { formatDateTime } from '@/utils/format'
 import { isAdmin } from '@/utils/auth'
 
 const STATUS_OPTIONS = [
@@ -32,6 +33,9 @@ const tags = ref([])
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const isEdit = computed(() => editingId.value != null)
+const coverUploading = ref(false)
+const contentUploading = ref(false)
+const contentTextareaRef = ref()
 
 const formRef = ref()
 const form = reactive({
@@ -54,6 +58,47 @@ const rules = {
   ],
   content: [{ required: true, message: '请输入正文', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+}
+
+const UPLOAD_HINT = '支持 jpg/png/gif/webp，最大 8MB'
+
+async function onCoverUpload({ file }) {
+  coverUploading.value = true
+  try {
+    const data = await uploadMedia(file)
+    form.coverUrl = data.url
+    ElMessage.success('封面已上传')
+  } catch (e) {
+    ElMessage.error(e.message || '上传失败')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
+async function onInsertContentImage({ file }) {
+  contentUploading.value = true
+  try {
+    const data = await uploadMedia(file)
+    const snippet = `\n![image](${data.url})\n`
+    const el = contentTextareaRef.value?.textarea || contentTextareaRef.value?.$el?.querySelector?.('textarea')
+    if (el && typeof el.selectionStart === 'number') {
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      form.content = form.content.slice(0, start) + snippet + form.content.slice(end)
+      requestAnimationFrame(() => {
+        const pos = start + snippet.length
+        el.focus()
+        el.setSelectionRange(pos, pos)
+      })
+    } else {
+      form.content = (form.content || '') + snippet
+    }
+    ElMessage.success('已插入图片')
+  } catch (e) {
+    ElMessage.error(e.message || '上传失败')
+  } finally {
+    contentUploading.value = false
+  }
 }
 
 function statusLabel(status) {
@@ -252,7 +297,7 @@ onMounted(async () => {
       </el-table-column>
       <el-table-column label="发布时间" width="170">
         <template #default="{ row }">
-          {{ formatDate(row.publishedAt) }}
+          {{ formatDateTime(row.publishedAt) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
@@ -302,8 +347,24 @@ onMounted(async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="封面 URL">
-          <el-input v-model="form.coverUrl" placeholder="https://..." />
+        <el-form-item label="封面">
+          <div class="cover-row">
+            <el-input v-model="form.coverUrl" placeholder="https://... 或上传后自动填入" />
+            <el-upload
+              :show-file-list="false"
+              :http-request="onCoverUpload"
+              accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"
+            >
+              <el-button :loading="coverUploading">上传封面</el-button>
+            </el-upload>
+          </div>
+          <p class="field-hint">{{ UPLOAD_HINT }}；也可继续手填外链</p>
+          <img
+            v-if="form.coverUrl"
+            class="cover-preview"
+            :src="form.coverUrl"
+            alt="封面预览"
+          />
         </el-form-item>
         <el-form-item label="摘要">
           <el-input
@@ -361,7 +422,18 @@ onMounted(async () => {
           />
         </el-form-item>
         <el-form-item label="正文" prop="content">
+          <div class="content-toolbar">
+            <el-upload
+              :show-file-list="false"
+              :http-request="onInsertContentImage"
+              accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"
+            >
+              <el-button size="small" :loading="contentUploading">插入图片</el-button>
+            </el-upload>
+            <span class="field-hint">{{ UPLOAD_HINT }}</span>
+          </div>
           <el-input
+            ref="contentTextareaRef"
             v-model="form.content"
             type="textarea"
             :rows="12"
@@ -397,6 +469,46 @@ onMounted(async () => {
 h1 {
   margin: 0;
   font-size: 1.35rem;
+}
+
+.cover-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+.cover-row .el-input {
+  flex: 1;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.cover-preview {
+  display: block;
+  margin-top: 8px;
+  max-width: 240px;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e6ebef;
+}
+
+.content-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.content-toolbar .field-hint {
+  margin: 0;
 }
 
 .sub {

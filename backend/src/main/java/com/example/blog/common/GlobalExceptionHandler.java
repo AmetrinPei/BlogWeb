@@ -10,6 +10,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -54,6 +56,19 @@ public class GlobalExceptionHandler {
     public Result<Void> handleBadRequest(Exception ex) {
         String message = ex.getMessage() != null ? ex.getMessage() : "请求参数错误";
         return Result.fail(ErrorCode.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleMaxUpload(MaxUploadSizeExceededException ex) {
+        return Result.fail(ErrorCode.BAD_REQUEST, "文件大小不能超过 8MB");
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public Result<Void> handleMultipart(MultipartException ex) {
+        if (ex instanceof MaxUploadSizeExceededException) {
+            return handleMaxUpload((MaxUploadSizeExceededException) ex);
+        }
+        return Result.fail(ErrorCode.BAD_REQUEST, "请求格式错误");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

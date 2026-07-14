@@ -8,6 +8,10 @@ spring:
     hibernate:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 8MB
 
 blog:
   admin:
@@ -19,3 +23,7 @@ blog:
   site:
     base-url: http://localhost:5173
     feed-limit: 20
+  upload:
+    dir: ./data/uploads-test
+    max-size-bytes: 8388608
+    public-path-prefix: /uploads

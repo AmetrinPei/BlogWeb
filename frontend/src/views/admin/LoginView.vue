@@ -1,23 +1,32 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '@/api/auth'
-import { isLoggedIn, setAuthSession } from '@/utils/auth'
+import {
+  isLoggedIn,
+  isSafeAdminRedirect,
+  isSafePublicRedirect,
+  setAuthSession,
+} from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
 
-const username = ref('admin')
+const isAdminLogin = computed(() => route.name === 'admin-login')
+
+const username = ref(isAdminLogin.value ? 'admin' : '')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
 function redirectTarget() {
   const raw = route.query.redirect
-  if (typeof raw === 'string' && raw.startsWith('/admin') && !raw.startsWith('/admin/login')) {
-    return raw
+  if (isAdminLogin.value) {
+    if (isSafeAdminRedirect(raw)) return raw
+    return '/admin/articles'
   }
-  return '/admin/articles'
+  if (isSafePublicRedirect(raw)) return raw
+  return '/'
 }
 
 onMounted(() => {
@@ -40,6 +49,8 @@ async function onSubmit() {
       userId: data.userId,
       username: data.username,
       role: data.role,
+      displayName: data.displayName,
+      avatarUrl: data.avatarUrl,
     })
     await router.replace(redirectTarget())
   } catch (e) {
@@ -48,13 +59,23 @@ async function onSubmit() {
     loading.value = false
   }
 }
+
+const registerLink = computed(() => {
+  const redirect = route.query.redirect
+  if (typeof redirect === 'string' && isSafePublicRedirect(redirect)) {
+    return { path: '/register', query: { redirect } }
+  }
+  return { path: '/register' }
+})
 </script>
 
 <template>
   <div class="login-page">
     <form class="card" @submit.prevent="onSubmit">
-      <h1>管理登录</h1>
-      <p class="hint">使用账号进入后台</p>
+      <h1>{{ isAdminLogin ? '管理登录' : '账号登录' }}</h1>
+      <p class="hint">
+        {{ isAdminLogin ? '使用账号进入后台' : '登录后可评论、管理资料，或进入后台写作' }}
+      </p>
 
       <label class="field">
         <span>账号</span>
@@ -78,7 +99,7 @@ async function onSubmit() {
       </button>
 
       <p class="links">
-        <RouterLink to="/register">还没有账号？去注册</RouterLink>
+        <RouterLink :to="registerLink">还没有账号？去注册</RouterLink>
       </p>
 
       <RouterLink class="back" to="/">← 返回访客站</RouterLink>

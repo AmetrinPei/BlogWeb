@@ -4,6 +4,7 @@ import com.example.blog.article.ArticleService;
 import com.example.blog.auth.CurrentUserService;
 import com.example.blog.comment.Comment;
 import com.example.blog.comment.CommentRepository;
+import com.example.blog.comment.CommentStatus;
 import com.example.blog.common.BusinessException;
 import com.example.blog.common.ErrorCode;
 import com.example.blog.user.User;
@@ -75,6 +76,9 @@ public class LikeService {
         } else if (type == LikeTargetType.COMMENT) {
             Comment comment = commentRepository.findById(targetId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "评论不存在"));
+            if (comment.getStatus() != CommentStatus.APPROVED) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
+            }
             articleService.requirePublishedArticle(comment.getArticle().getId());
         } else {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "无效的点赞目标类型");

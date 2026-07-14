@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { categoryEmoji, formatDate } from '@/utils/format'
+import { categoryEmoji, formatDateTime } from '@/utils/format'
 
 const props = defineProps({
   article: {
@@ -10,7 +10,7 @@ const props = defineProps({
 })
 
 const emoji = computed(() => categoryEmoji(props.article.category?.name))
-const publishedAt = computed(() => formatDate(props.article.publishedAt))
+const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
 </script>
 
 <template>

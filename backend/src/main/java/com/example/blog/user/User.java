@@ -33,6 +33,15 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role = UserRole.AUTHOR;
 
+    @Column(name = "display_name", length = 32)
+    private String displayName;
+
+    @Column(length = 200)
+    private String bio;
+
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -76,6 +85,38 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    /** Prefer displayName when set; otherwise username. */
+    public String resolveDisplayName() {
+        if (displayName != null && !displayName.isBlank()) {
+            return displayName.trim();
+        }
+        return username;
     }
 
     public LocalDateTime getCreatedAt() {

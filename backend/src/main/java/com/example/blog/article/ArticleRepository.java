@@ -52,8 +52,12 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
     List<Object[]> countPublishedGroupedByYearMonth();
 
     @Modifying(clearAutomatically = true)
-    @Query(value = "DELETE FROM comments WHERE article_id = :articleId", nativeQuery = true)
-    void deleteCommentsByArticleId(@Param("articleId") Long articleId);
+    @Query(value = "DELETE FROM comments WHERE article_id = :articleId AND parent_id IS NOT NULL", nativeQuery = true)
+    void deleteReplyCommentsByArticleId(@Param("articleId") Long articleId);
+
+    @Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM comments WHERE article_id = :articleId AND parent_id IS NULL", nativeQuery = true)
+    void deleteRootCommentsByArticleId(@Param("articleId") Long articleId);
 
     @Modifying(clearAutomatically = true)
     @Query(value = """

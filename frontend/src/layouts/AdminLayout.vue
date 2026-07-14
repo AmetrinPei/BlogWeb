@@ -1,10 +1,9 @@
 <script setup>
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { clearAuth, getUser, isAdmin } from '@/utils/auth'
+import { clearAuth, displayLabel, isAdmin, useAuthSession } from '@/utils/auth'
 
 const router = useRouter()
-const user = computed(() => getUser())
+const { user } = useAuthSession()
 
 function logout() {
   clearAuth()
@@ -21,9 +20,11 @@ function logout() {
         <template v-if="isAdmin()">
           <RouterLink to="/admin/categories">分类</RouterLink>
           <RouterLink to="/admin/tags">标签</RouterLink>
+          <RouterLink to="/admin/comments">评论审核</RouterLink>
+          <RouterLink to="/admin/sensitive-words">敏感词</RouterLink>
           <RouterLink to="/admin/site">站点</RouterLink>
         </template>
-        <span v-if="user?.username" class="username">{{ user.username }}</span>
+        <RouterLink v-if="user" to="/profile">{{ displayLabel(user) || user.username }}</RouterLink>
         <RouterLink to="/">回访客站</RouterLink>
         <button class="logout" type="button" @click="logout">退出</button>
       </nav>

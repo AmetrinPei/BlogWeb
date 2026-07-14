@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getRole, isLoggedIn } from '@/utils/auth'
+import { getRole, isLoggedIn, isSafeAdminRedirect, isSafePublicRedirect } from '@/utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,13 +40,19 @@ const router = createRouter({
           component: () => import('@/views/RegisterView.vue'),
           meta: { public: true },
         },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('@/views/ProfileView.vue'),
+          meta: { requiresLogin: true },
+        },
       ],
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/admin/LoginView.vue'),
-      meta: { area: 'admin', public: true },
+      meta: { area: 'public', public: true },
     },
     {
       path: '/admin/login',
@@ -82,6 +88,18 @@ const router = createRouter({
           meta: { roles: ['ADMIN'] },
         },
         {
+          path: 'comments',
+          name: 'admin-comments',
+          component: () => import('@/views/admin/CommentsModerationView.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
+        {
+          path: 'sensitive-words',
+          name: 'admin-sensitive-words',
+          component: () => import('@/views/admin/SensitiveWordsView.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
+        {
           path: 'site',
           name: 'admin-site',
           component: () => import('@/views/admin/SiteSettingsView.vue'),
@@ -97,12 +115,20 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const needsAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const needsLogin = to.matched.some((record) => record.meta.requiresLogin)
   const loggedIn = isLoggedIn()
   const role = getRole()
 
   if (needsAuth && !loggedIn) {
     return {
       name: 'admin-login',
+      query: { redirect: to.fullPath },
+    }
+  }
+
+  if (needsLogin && !loggedIn) {
+    return {
+      name: 'login',
       query: { redirect: to.fullPath },
     }
   }
@@ -118,8 +144,20 @@ router.beforeEach((to) => {
     }
   }
 
-  if ((to.name === 'admin-login' || to.name === 'login') && loggedIn) {
+  if (to.name === 'admin-login' && loggedIn) {
+    const raw = to.query.redirect
+    if (isSafeAdminRedirect(raw)) {
+      return raw
+    }
     return { name: 'admin-articles' }
+  }
+
+  if (to.name === 'login' && loggedIn) {
+    const raw = to.query.redirect
+    if (isSafePublicRedirect(raw)) {
+      return raw
+    }
+    return { name: 'home' }
   }
 
   return true

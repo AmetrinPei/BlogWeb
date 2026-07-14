@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: blog
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 8MB
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/blog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
     username: root
@@ -28,6 +32,12 @@ blog:
   site:
     base-url: ${BLOG_SITE_BASE_URL:http://localhost:5173}
     feed-limit: ${BLOG_SITE_FEED_LIMIT:20}
+  comment:
+    rate-limit-per-minute: ${BLOG_COMMENT_RATE_LIMIT:5}
+  upload:
+    dir: ${BLOG_UPLOAD_DIR:./data/uploads}
+    max-size-bytes: ${BLOG_UPLOAD_MAX_SIZE:8388608}
+    public-path-prefix: /uploads
 
 logging:
   level:

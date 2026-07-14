@@ -7,5 +7,5 @@ git push -u origin main
 
 
 git add .
-git commit -m "说明这次改了什么"
+git commit -m "更新了 1搜索扩到摘要/正文；可选高亮 2输出RSS 3长文 TOC、代码高亮、骨架屏等"
 git push

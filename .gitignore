@@ -11,3 +11,8 @@ Desktop.ini
 
 # Spec / docs tooling
 node_modules/
+
+# Local media uploads (blog-media-upload)
+backend/data/uploads/
+backend/data/uploads-test/
+data/uploads/

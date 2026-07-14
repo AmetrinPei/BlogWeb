@@ -1,9 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { register } from '@/api/auth'
-import { setAuthSession } from '@/utils/auth'
+import { isSafePublicRedirect, setAuthSession } from '@/utils/auth'
 
+const route = useRoute()
 const router = useRouter()
 
 const username = ref('')
@@ -11,6 +12,12 @@ const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref('')
+
+function redirectTarget() {
+  const raw = route.query.redirect
+  if (isSafePublicRedirect(raw)) return raw
+  return '/'
+}
 
 async function onSubmit() {
   error.value = ''
@@ -32,12 +39,10 @@ async function onSubmit() {
       userId: data.userId,
       username: data.username,
       role: data.role,
+      displayName: data.displayName,
+      avatarUrl: data.avatarUrl,
     })
-    if (data.role === 'ADMIN' || data.role === 'AUTHOR') {
-      await router.replace({ name: 'admin-articles' })
-    } else {
-      await router.replace({ name: 'home' })
-    }
+    await router.replace(redirectTarget())
   } catch (e) {
     error.value = e.message || '注册失败'
   } finally {
@@ -50,7 +55,7 @@ async function onSubmit() {
   <section class="page content-wide">
     <form class="card" @submit.prevent="onSubmit">
       <h1>注册账号</h1>
-      <p class="hint">创建账号后可登录后台写文章</p>
+      <p class="hint">注册后即可评论与写作；默认回到访客站</p>
 
       <label class="field">
         <span>用户名</span>
@@ -84,7 +89,15 @@ async function onSubmit() {
       </button>
 
       <p class="links">
-        <RouterLink to="/login">已有账号？去登录</RouterLink>
+        <RouterLink
+          :to="
+            route.query.redirect
+              ? { path: '/login', query: { redirect: route.query.redirect } }
+              : '/login'
+          "
+        >
+          已有账号？去登录
+        </RouterLink>
       </p>
     </form>
   </section>

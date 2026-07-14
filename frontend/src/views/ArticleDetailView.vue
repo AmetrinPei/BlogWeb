@@ -3,11 +3,11 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleDetailSkeleton from '@/components/ArticleDetailSkeleton.vue'
 import ArticleToc from '@/components/ArticleToc.vue'
-import { createComment, deleteComment, listComments } from '@/api/comments'
+import { createComment, deleteComment, listComments, pinComment } from '@/api/comments'
 import { fetchLikeStatus, toggleLike } from '@/api/likes'
 import { fetchArticle } from '@/api/articles'
 import { useCodeHighlight } from '@/composables/useCodeHighlight'
-import { formatDate, categoryEmoji } from '@/utils/format'
+import { formatDateTime, categoryEmoji } from '@/utils/format'
 import { getUser, isAdmin, isLoggedIn } from '@/utils/auth'
 import { renderArticleMarkdown } from '@/utils/markdown'
 
@@ -26,10 +26,14 @@ const commentsLoading = ref(false)
 const commentText = ref('')
 const commentSubmitting = ref(false)
 const commentError = ref('')
+const commentNotice = ref('')
+const replyToId = ref(null)
+const replyText = ref('')
+const replySubmitting = ref(false)
 
 const contentEl = ref(null)
 
-const publishedAt = computed(() => formatDate(article.value?.publishedAt))
+const publishedAt = computed(() => formatDateTime(article.value?.publishedAt))
 const emoji = computed(() => categoryEmoji(article.value?.category?.name))
 
 const rendered = computed(() => renderArticleMarkdown(article.value?.content || ''))
@@ -40,10 +44,45 @@ useCodeHighlight(renderedHtml, () => contentEl.value)
 
 const currentUser = computed(() => getUser())
 
+function commentAuthorLabel(c) {
+  if (c?.displayName && String(c.displayName).trim()) {
+    return String(c.displayName).trim()
+  }
+  return c?.username || '用户'
+}
+
+const loginRedirectTo = computed(() => ({
+  path: '/login',
+  query: { redirect: route.fullPath },
+}))
+
 function canDeleteComment(comment) {
   if (!isLoggedIn()) return false
   if (isAdmin()) return true
   return comment.userId === currentUser.value?.userId
+}
+
+function canPinComment(comment) {
+  if (!isLoggedIn() || !comment || comment.parentId != null) return false
+  if (isAdmin()) return true
+  return article.value?.authorId != null
+    && article.value.authorId === currentUser.value?.userId
+}
+
+const pinLoadingId = ref(null)
+
+async function onTogglePin(comment) {
+  if (!canPinComment(comment) || pinLoadingId.value) return
+  commentError.value = ''
+  pinLoadingId.value = comment.id
+  try {
+    await pinComment(comment.id, !comment.pinned)
+    await loadComments(article.value.id)
+  } catch (e) {
+    commentError.value = e.message || '置顶操作失败'
+  } finally {
+    pinLoadingId.value = null
+  }
 }
 
 async function loadLikeStatus(articleId) {
@@ -102,6 +141,7 @@ async function onToggleLike() {
 
 async function onSubmitComment() {
   commentError.value = ''
+  commentNotice.value = ''
   const content = commentText.value.trim()
   if (!content) return
   if (!isLoggedIn()) {
@@ -110,9 +150,13 @@ async function onSubmitComment() {
   }
   commentSubmitting.value = true
   try {
-    await createComment(article.value.id, content)
+    const created = await createComment(article.value.id, content)
     commentText.value = ''
-    await loadComments(article.value.id)
+    if (created?.status === 'PENDING') {
+      commentNotice.value = '评论已提交，待审核后显示'
+    } else {
+      await loadComments(article.value.id)
+    }
   } catch (e) {
     commentError.value = e.message || '发表评论失败'
   } finally {
@@ -120,9 +164,53 @@ async function onSubmitComment() {
   }
 }
 
+function startReply(comment) {
+  commentError.value = ''
+  commentNotice.value = ''
+  if (!isLoggedIn()) {
+    commentError.value = '请先登录后再回复'
+    return
+  }
+  replyToId.value = comment.id
+  replyText.value = ''
+}
+
+function cancelReply() {
+  replyToId.value = null
+  replyText.value = ''
+}
+
+async function onSubmitReply(parent) {
+  commentError.value = ''
+  commentNotice.value = ''
+  const content = replyText.value.trim()
+  if (!content) return
+  if (!isLoggedIn()) {
+    commentError.value = '请先登录后再回复'
+    return
+  }
+  replySubmitting.value = true
+  try {
+    const created = await createComment(article.value.id, content, parent.id)
+    cancelReply()
+    if (created?.status === 'PENDING') {
+      commentNotice.value = '回复已提交，待审核后显示'
+    } else {
+      await loadComments(article.value.id)
+    }
+  } catch (e) {
+    commentError.value = e.message || '发表回复失败'
+  } finally {
+    replySubmitting.value = false
+  }
+}
+
 async function onDeleteComment(comment) {
   try {
     await deleteComment(comment.id)
+    if (replyToId.value === comment.id) {
+      cancelReply()
+    }
     await loadComments(article.value.id)
   } catch (e) {
     commentError.value = e.message || '删除评论失败'
@@ -210,18 +298,45 @@ watch(
           </button>
         </form>
         <p v-else class="comment-hint">
-          <RouterLink to="/login">登录</RouterLink> 后可发表评论
+          <RouterLink :to="loginRedirectTo">登录</RouterLink> 后可发表评论
         </p>
 
         <p v-if="commentError" class="comment-error">{{ commentError }}</p>
+        <p v-if="commentNotice" class="comment-notice">{{ commentNotice }}</p>
 
         <p v-if="commentsLoading" class="state">加载评论…</p>
         <p v-else-if="!comments.length" class="state">暂无评论，来抢沙发吧。</p>
         <ul v-else class="comment-list">
-          <li v-for="c in comments" :key="c.id" class="comment-item">
+          <li v-for="c in comments" :key="c.id" class="comment-item" :class="{ 'is-pinned': c.pinned }">
             <div class="comment-head">
-              <strong>{{ c.username }}</strong>
-              <time>{{ formatDate(c.createdAt) }}</time>
+              <span v-if="c.floorNo != null" class="floor-badge">#{{ c.floorNo }}</span>
+              <span v-if="c.pinned" class="pin-badge">置顶</span>
+              <img
+                v-if="c.avatarUrl"
+                class="comment-avatar"
+                :src="c.avatarUrl"
+                alt=""
+                width="28"
+                height="28"
+              />
+              <strong>{{ commentAuthorLabel(c) }}</strong>
+              <time>{{ formatDateTime(c.createdAt) }}</time>
+              <button
+                class="reply-btn"
+                type="button"
+                @click="startReply(c)"
+              >
+                回复
+              </button>
+              <button
+                v-if="canPinComment(c)"
+                class="pin-btn"
+                type="button"
+                :disabled="pinLoadingId === c.id"
+                @click="onTogglePin(c)"
+              >
+                {{ c.pinned ? '取消置顶' : '置顶' }}
+              </button>
               <button
                 v-if="canDeleteComment(c)"
                 class="delete-btn"
@@ -232,6 +347,51 @@ watch(
               </button>
             </div>
             <p class="comment-body">{{ c.content }}</p>
+
+            <form
+              v-if="replyToId === c.id"
+              class="reply-form"
+              @submit.prevent="onSubmitReply(c)"
+            >
+              <textarea
+                v-model="replyText"
+                rows="2"
+                :placeholder="`回复 ${commentAuthorLabel(c)}…`"
+                maxlength="1000"
+              />
+              <div class="reply-actions">
+                <button type="submit" :disabled="replySubmitting || !replyText.trim()">
+                  {{ replySubmitting ? '发送中…' : '发送回复' }}
+                </button>
+                <button type="button" class="cancel-btn" @click="cancelReply">取消</button>
+              </div>
+            </form>
+
+            <ul v-if="c.replies?.length" class="reply-list">
+              <li v-for="r in c.replies" :key="r.id" class="comment-item is-reply">
+                <div class="comment-head">
+                  <img
+                    v-if="r.avatarUrl"
+                    class="comment-avatar"
+                    :src="r.avatarUrl"
+                    alt=""
+                    width="28"
+                    height="28"
+                  />
+                  <strong>{{ commentAuthorLabel(r) }}</strong>
+                  <time>{{ formatDateTime(r.createdAt) }}</time>
+                  <button
+                    v-if="canDeleteComment(r)"
+                    class="delete-btn"
+                    type="button"
+                    @click="onDeleteComment(r)"
+                  >
+                    删除
+                  </button>
+                </div>
+                <p class="comment-body">{{ r.content }}</p>
+              </li>
+            </ul>
           </li>
         </ul>
       </section>
@@ -459,6 +619,12 @@ watch(
   font-size: 0.9rem;
 }
 
+.comment-notice {
+  margin: 0 0 12px;
+  color: #0c7a5c;
+  font-size: 0.9rem;
+}
+
 .comment-list {
   margin: 0;
   padding: 0;
@@ -485,17 +651,129 @@ watch(
   color: var(--text-muted);
 }
 
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-soft);
+}
+
+.floor-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pin-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--highlight);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.comment-item.is-pinned {
+  border-left: 3px solid var(--highlight);
+  padding-left: 10px;
+}
+
 .comment-head strong {
   color: var(--text);
 }
 
-.delete-btn {
+.reply-btn {
   margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--accent-lilac);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pin-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pin-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.pin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-btn {
   border: none;
   background: transparent;
   color: #d63031;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.comment-item.is-reply .delete-btn {
+  margin-left: auto;
+}
+
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.reply-form textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.reply-form button[type='submit'] {
+  min-height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reply-form .cancel-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.reply-list {
+  margin: 12px 0 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 2px solid var(--border-soft);
+}
+
+.comment-item.is-reply {
+  padding: 10px 12px;
+  background: rgba(45, 52, 54, 0.03);
 }
 
 .comment-body {

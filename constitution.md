@@ -17,7 +17,7 @@
 
 - 前后端分离；通信仅通过 REST API + JSON
 - 统一响应结构：`{ "code", "message", "data" }`；错误码约定 0 / 400 / 401 / 403 / 404 / 409 / 500
-- 后端按 domain 分包：`auth` / `article` / `category` / `tag` / `user` / `comment` / `like` / `site` / `common` / `config`
+- 后端按 domain 分包：`auth` / `article` / `category` / `tag` / `user` / `comment` / `like` / `site` / `feed` / `media` / `common` / `config`
 - 依赖方向：Controller → Service → Repository；禁止跨层逆向依赖
 - 访客公开接口与管理/需登录接口路径分区清晰（如 `/api/...` 公开，`/api/admin/...` 管理）
 
@@ -35,7 +35,7 @@
 - 密码仅存 BCrypt 哈希；日志禁止输出密码、Token 全文、连接串密钥
 - 写操作与敏感读操作必须经身份认证；细粒度授权（角色、资源归属）在 Service 校验
 - Markdown 渲染为 HTML 时必须做 XSS 消毒（禁用危险标签/属性）
-- 上传类能力（若后续引入）必须校验类型与大小；标准版封面仅允许 URL 字段，不落地文件上传
+- 上传类能力必须校验类型与大小；本地磁盘上传见 `blog-media-upload`（对象存储 SDK 仍须单独 Spec + 修订本条）
 
 ## 5. 质量门禁
 

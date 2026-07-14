@@ -2,6 +2,7 @@ package com.example.blog.article;
 
 import com.example.blog.category.CategoryResponse;
 import com.example.blog.tag.TagResponse;
+import com.example.blog.user.User;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -22,6 +23,7 @@ public class ArticleResponse {
     private final boolean recommended;
     private final Long authorId;
     private final String authorName;
+    private final String authorAvatarUrl;
     private final LocalDateTime publishedAt;
     private final CategoryResponse category;
     private final List<TagResponse> tags;
@@ -38,6 +40,7 @@ public class ArticleResponse {
             boolean recommended,
             Long authorId,
             String authorName,
+            String authorAvatarUrl,
             LocalDateTime publishedAt,
             CategoryResponse category,
             List<TagResponse> tags
@@ -53,6 +56,7 @@ public class ArticleResponse {
         this.recommended = recommended;
         this.authorId = authorId;
         this.authorName = authorName;
+        this.authorAvatarUrl = authorAvatarUrl;
         this.publishedAt = publishedAt;
         this.category = category;
         this.tags = tags;
@@ -71,8 +75,10 @@ public class ArticleResponse {
                 .sorted(Comparator.comparing(tag -> tag.getId() == null ? 0L : tag.getId()))
                 .map(TagResponse::from)
                 .toList();
-        Long authorId = article.getAuthor() != null ? article.getAuthor().getId() : null;
-        String authorName = article.getAuthor() != null ? article.getAuthor().getUsername() : null;
+        User author = article.getAuthor();
+        Long authorId = author != null ? author.getId() : null;
+        String authorName = author != null ? author.resolveDisplayName() : null;
+        String authorAvatarUrl = author != null ? author.getAvatarUrl() : null;
         return new ArticleResponse(
                 article.getId(),
                 article.getTitle(),
@@ -85,6 +91,7 @@ public class ArticleResponse {
                 article.isRecommended(),
                 authorId,
                 authorName,
+                authorAvatarUrl,
                 article.getPublishedAt(),
                 CategoryResponse.from(article.getCategory()),
                 tags
@@ -145,6 +152,10 @@ public class ArticleResponse {
 
     public String getAuthorName() {
         return authorName;
+    }
+
+    public String getAuthorAvatarUrl() {
+        return authorAvatarUrl;
     }
 
     public LocalDateTime getPublishedAt() {

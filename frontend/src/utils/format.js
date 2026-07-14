@@ -9,6 +9,22 @@ export function formatDate(value) {
   return `${y}-${m}-${day}`
 }
 
+/** 格式化为 YYYY-MM-DD HH:mm（评论等） */
+export function formatDateTime(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) {
+    const s = String(value)
+    return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s
+  }
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}`
+}
+
 /** 按分类名映射卡片 emoji，未知则默认 */
 const CATEGORY_EMOJI = {
   技术: '💻',

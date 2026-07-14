@@ -62,7 +62,9 @@ public class AuthService {
                 jwtProperties.getExpireHours(),
                 user.getId(),
                 user.getUsername(),
-                role
+                role,
+                user.getDisplayName(),
+                user.getAvatarUrl()
         );
     }
 }

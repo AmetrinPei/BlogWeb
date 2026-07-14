@@ -1,15 +1,66 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import {
+  canAccessAdmin,
+  clearAuth,
+  displayLabel,
+  useAuthSession,
+} from '@/utils/auth'
 
 const route = useRoute()
+const router = useRouter()
 const { site } = useSiteSettings()
+const { user, loggedIn } = useAuthSession()
+
+const menuOpen = ref(false)
 
 const isHome = computed(() => route.path === '/')
 const isArticles = computed(() => route.path.startsWith('/articles'))
 const isArchive = computed(() => route.path === '/archive')
 const isAbout = computed(() => route.path === '/about')
+
+const label = computed(() => displayLabel(user.value) || '账号')
+const avatarSrc = computed(() => user.value?.avatarUrl || null)
+const showAdminEntry = computed(() => canAccessAdmin())
+
+const loginTo = computed(() => ({
+  path: '/login',
+  query: route.path.startsWith('/login') ? undefined : { redirect: route.fullPath },
+}))
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+
+function closeMenu() {
+  menuOpen.value = false
+}
+
+function onLogout() {
+  clearAuth()
+  closeMenu()
+}
+
+function onSwitchAccount() {
+  clearAuth()
+  closeMenu()
+  router.push({ name: 'login' })
+}
+
+function onDocClick(e) {
+  if (!menuOpen.value) return
+  const root = e.target?.closest?.('.account')
+  if (!root) closeMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+})
 </script>
 
 <template>
@@ -24,9 +75,47 @@ const isAbout = computed(() => route.path === '/about')
         <RouterLink class="pill" :class="{ 'is-active': isAbout }" to="/about">关于我</RouterLink>
       </nav>
 
-      <RouterLink class="avatar" to="/about" :title="`关于 ${site.author}`">
-        <img :src="site.avatar" alt="头像" width="44" height="44" />
-      </RouterLink>
+      <div class="header-actions">
+        <RouterLink class="site-avatar" to="/about" :title="`关于 ${site.author}`">
+          <img :src="site.avatar" alt="站点作者" width="40" height="40" />
+        </RouterLink>
+
+        <div v-if="!loggedIn" class="guest-auth">
+          <RouterLink class="auth-link" :to="loginTo">登录</RouterLink>
+          <RouterLink class="auth-link auth-link--strong" to="/register">注册</RouterLink>
+        </div>
+
+        <div v-else class="account">
+          <button
+            class="account-trigger"
+            type="button"
+            :aria-expanded="menuOpen"
+            aria-haspopup="true"
+            @click.stop="toggleMenu"
+          >
+            <span v-if="avatarSrc" class="user-avatar">
+              <img :src="avatarSrc" alt="" width="36" height="36" />
+            </span>
+            <span v-else class="user-avatar user-avatar--fallback" aria-hidden="true">
+              {{ label.slice(0, 1) }}
+            </span>
+            <span class="account-name">{{ label }}</span>
+          </button>
+          <div v-if="menuOpen" class="account-menu" role="menu">
+            <RouterLink role="menuitem" to="/profile" @click="closeMenu">我的资料</RouterLink>
+            <RouterLink
+              v-if="showAdminEntry"
+              role="menuitem"
+              to="/admin/articles"
+              @click="closeMenu"
+            >
+              管理后台
+            </RouterLink>
+            <button role="menuitem" type="button" @click="onLogout">退出登录</button>
+            <button role="menuitem" type="button" @click="onSwitchAccount">切换账号</button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 </template>
@@ -90,9 +179,16 @@ const isAbout = computed(() => route.path === '/about')
   font-weight: 600;
 }
 
-.avatar {
-  width: 44px;
-  height: 44px;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.site-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid var(--highlight);
@@ -100,17 +196,130 @@ const isAbout = computed(() => route.path === '/about')
   flex-shrink: 0;
 }
 
-.avatar img {
+.site-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.guest-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-link {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+}
+
+.auth-link:hover {
+  color: var(--text);
+}
+
+.auth-link--strong {
+  color: var(--text);
+  background: var(--primary-soft);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.account {
+  position: relative;
+}
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 999px;
+  color: var(--text);
+}
+
+.account-trigger:hover {
+  background: var(--primary-soft);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.account-name {
+  max-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 160px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 30;
+}
+
+.account-menu a,
+.account-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.account-menu a:hover,
+.account-menu button:hover {
+  background: var(--primary-soft);
 }
 
 @media (max-width: 720px) {
   .site-header__inner {
     grid-template-columns: 1fr auto;
     grid-template-areas:
-      'logo avatar'
+      'logo actions'
       'nav nav';
     padding-block: 10px;
     gap: 10px;
@@ -121,10 +330,8 @@ const isAbout = computed(() => route.path === '/about')
     font-size: 1.25rem;
   }
 
-  .avatar {
-    grid-area: avatar;
-    width: 40px;
-    height: 40px;
+  .header-actions {
+    grid-area: actions;
   }
 
   .pill-nav {
@@ -136,6 +343,15 @@ const isAbout = computed(() => route.path === '/about')
     min-height: 32px;
     padding: 0 14px;
     font-size: 0.92rem;
+  }
+
+  .account-name {
+    display: none;
+  }
+
+  .site-avatar {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

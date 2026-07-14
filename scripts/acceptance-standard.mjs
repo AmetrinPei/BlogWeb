@@ -28,6 +28,15 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg)
 }
 
+function findCommentInTree(nodes, id) {
+  for (const node of nodes || []) {
+    if (node.id === id) return node
+    const hit = findCommentInTree(node.replies, id)
+    if (hit) return hit
+  }
+  return null
+}
+
 const results = []
 function pass(id, detail) {
   results.push({ id, ok: true, detail })
@@ -198,7 +207,9 @@ async function main() {
   pass('CL-AC-1', 'create first-level comment')
 
   const comments = await req('GET', `/api/articles/${pubId}/comments`)
-  assert(comments.json.code === 0 && comments.json.data.some((c) => c.id === commentId), 'list comments')
+  assert(comments.json.code === 0, 'list comments code')
+  const found = findCommentInTree(comments.json.data, commentId)
+  assert(found, 'list comments contains created id (tree-aware)')
   pass('CL-AC-2', 'list comments')
 
   const like1 = await req('POST', '/api/likes/toggle', {

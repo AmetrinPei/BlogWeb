@@ -176,7 +176,9 @@ public class ArticleService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文章不存在"));
         assertCanModify(user, article);
         articleRepository.deleteLikesByArticleId(id);
-        articleRepository.deleteCommentsByArticleId(id);
+        // 先删回复再删根，避免 parent_id 自引用外键阻碍整文删除
+        articleRepository.deleteReplyCommentsByArticleId(id);
+        articleRepository.deleteRootCommentsByArticleId(id);
         article.getTags().clear();
         articleRepository.delete(article);
     }
