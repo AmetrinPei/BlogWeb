@@ -275,6 +275,11 @@ onMounted(async () => {
     <el-table v-loading="loading" :data="articles" stripe empty-text="暂无文章">
       <el-table-column prop="id" label="ID" width="72" />
       <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
+      <el-table-column label="作者" width="120" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.authorName || '—' }}
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
           {{ statusLabel(row.status) }}

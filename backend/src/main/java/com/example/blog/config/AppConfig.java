@@ -10,7 +10,10 @@ import org.springframework.context.annotation.Configuration;
         JwtProperties.class,
         BlogSiteProperties.class,
         CommentProperties.class,
-        UploadProperties.class
+        UploadProperties.class,
+        CorsProperties.class,
+        AuthProperties.class,
+        LoginRateLimitProperties.class
 })
 public class AppConfig {
 }

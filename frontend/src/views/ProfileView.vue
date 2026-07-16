@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { getMe, updateMe } from '@/api/profile'
+import { changePassword, getMe, updateMe } from '@/api/profile'
 import { uploadMedia } from '@/api/adminMedia'
 import { patchAuthUser } from '@/utils/auth'
 
@@ -15,6 +15,13 @@ const role = ref('')
 const displayName = ref('')
 const bio = ref('')
 const avatarUrl = ref('')
+
+const pwdSaving = ref(false)
+const pwdError = ref('')
+const pwdSuccess = ref('')
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
 
 async function load() {
   loading.value = true
@@ -74,6 +81,37 @@ async function onPickAvatar(e) {
     error.value = err.message || '上传失败'
   } finally {
     uploading.value = false
+  }
+}
+
+async function onChangePassword() {
+  pwdSaving.value = true
+  pwdError.value = ''
+  pwdSuccess.value = ''
+  if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
+    pwdError.value = '请填写当前密码与新密码'
+    pwdSaving.value = false
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    pwdError.value = '两次输入的新密码不一致'
+    pwdSaving.value = false
+    return
+  }
+  try {
+    await changePassword({
+      currentPassword: currentPassword.value,
+      newPassword: newPassword.value,
+      confirmPassword: confirmPassword.value,
+    })
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+    pwdSuccess.value = '密码已修改。其它设备上的登录将失效，需重新登录。'
+  } catch (e) {
+    pwdError.value = e.message || '修改密码失败'
+  } finally {
+    pwdSaving.value = false
   }
 }
 
@@ -140,6 +178,52 @@ onMounted(load)
         </button>
       </template>
     </form>
+
+    <form v-if="!loading" class="card card--pwd" @submit.prevent="onChangePassword">
+      <h2>修改密码</h2>
+      <p class="hint">修改后可继续使用当前登录状态；下次请用新密码登录</p>
+
+      <label class="field">
+        <span>当前密码</span>
+        <input
+          v-model="currentPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="输入当前密码"
+        />
+      </label>
+
+      <label class="field">
+        <span>新密码</span>
+        <input
+          v-model="newPassword"
+          type="password"
+          autocomplete="new-password"
+          minlength="6"
+          maxlength="64"
+          placeholder="6～64 位"
+        />
+      </label>
+
+      <label class="field">
+        <span>确认新密码</span>
+        <input
+          v-model="confirmPassword"
+          type="password"
+          autocomplete="new-password"
+          minlength="6"
+          maxlength="64"
+          placeholder="再次输入新密码"
+        />
+      </label>
+
+      <p v-if="pwdError" class="error">{{ pwdError }}</p>
+      <p v-if="pwdSuccess" class="success">{{ pwdSuccess }}</p>
+
+      <button class="submit" type="submit" :disabled="pwdSaving">
+        {{ pwdSaving ? '提交中…' : '修改密码' }}
+      </button>
+    </form>
   </section>
 </template>
 
@@ -149,15 +233,24 @@ onMounted(load)
   margin: 0 auto;
   padding: 32px 28px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
 }
 
-h1 {
+.card--pwd {
+  margin-top: 20px;
+}
+
+h1,
+h2 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.25rem;
 }
 
 .hint {

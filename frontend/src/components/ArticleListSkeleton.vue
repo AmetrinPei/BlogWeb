@@ -34,7 +34,7 @@ defineProps({
   align-items: flex-start;
   padding: 24px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
 }

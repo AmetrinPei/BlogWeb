@@ -1,11 +1,20 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { clearAuth, displayLabel, isAdmin, useAuthSession } from '@/utils/auth'
+import { logout as apiLogout } from '@/api/auth'
+import { clearAuth, displayLabel, getRefreshToken, isAdmin, useAuthSession } from '@/utils/auth'
 
 const router = useRouter()
 const { user } = useAuthSession()
 
-function logout() {
+async function logout() {
+  const refreshToken = getRefreshToken()
+  if (refreshToken) {
+    try {
+      await apiLogout(refreshToken)
+    } catch {
+      // ignore
+    }
+  }
   clearAuth()
   router.push({ name: 'admin-login' })
 }

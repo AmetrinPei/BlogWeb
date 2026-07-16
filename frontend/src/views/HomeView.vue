@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import ArticleCard from '@/components/ArticleCard.vue'
+import HeroArt from '@/components/HeroArt.vue'
 import { fetchArticles, fetchFeatured } from '@/api/articles'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
@@ -45,9 +46,7 @@ onMounted(async () => {
           <RouterLink class="btn-ghost" to="/about">关于我</RouterLink>
         </div>
       </div>
-      <div class="hero__art">
-        <img src="/hero-illustration.svg" alt="" width="420" height="320" />
-      </div>
+      <HeroArt class="hero__art" :src="site.homeHeroUrl" />
     </section>
 
     <section v-if="featured.length || featuredLoading" class="featured content-wide section-gap">
@@ -137,12 +136,6 @@ h1 {
 .btn-ghost {
   background: rgba(179, 136, 255, 0.14);
   color: var(--text);
-}
-
-.hero__art img {
-  width: 100%;
-  height: auto;
-  border-radius: var(--radius-lg);
 }
 
 .featured__head,

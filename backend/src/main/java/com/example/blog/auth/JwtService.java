@@ -25,7 +25,7 @@ public class JwtService {
 
     public String createToken(Long userId, String username, String role) {
         Instant now = Instant.now();
-        Instant expireAt = now.plus(jwtProperties.getExpireHours(), ChronoUnit.HOURS);
+        Instant expireAt = now.plus(jwtProperties.getAccessExpireMinutes(), ChronoUnit.MINUTES);
         return Jwts.builder()
                 .subject(username)
                 .claim("uid", userId)

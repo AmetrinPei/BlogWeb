@@ -28,7 +28,17 @@ blog:
     password: ${ADMIN_PASSWORD:admin123}
   jwt:
     secret: ${JWT_SECRET:blog-mvp-jwt-secret-key-change-me-32bytes-min}
-    expire-hours: 2
+    access-expire-minutes: 30
+    refresh-expire-days: 14
+  auth:
+    public-registration-enabled: ${BLOG_PUBLIC_REGISTRATION_ENABLED:true}
+    login-rate-limit:
+      max-failures: ${BLOG_LOGIN_MAX_FAILURES:5}
+      window-seconds: ${BLOG_LOGIN_WINDOW_SECONDS:900}
+  cors:
+    allowed-origin-patterns:
+      - http://localhost:*
+      - http://127.0.0.1:*
   site:
     base-url: ${BLOG_SITE_BASE_URL:http://localhost:5173}
     feed-limit: ${BLOG_SITE_FEED_LIMIT:20}

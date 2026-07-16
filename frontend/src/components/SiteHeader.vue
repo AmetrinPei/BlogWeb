@@ -2,16 +2,20 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useTheme } from '@/composables/useTheme'
+import { logout as apiLogout } from '@/api/auth'
 import {
   canAccessAdmin,
   clearAuth,
   displayLabel,
+  getRefreshToken,
   useAuthSession,
 } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
 const { site } = useSiteSettings()
+const { isDark, toggleTheme } = useTheme()
 const { user, loggedIn } = useAuthSession()
 
 const menuOpen = ref(false)
@@ -38,12 +42,24 @@ function closeMenu() {
   menuOpen.value = false
 }
 
-function onLogout() {
+async function endServerSession() {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) return
+  try {
+    await apiLogout(refreshToken)
+  } catch {
+    // ignore — still clear local session
+  }
+}
+
+async function onLogout() {
+  await endServerSession()
   clearAuth()
   closeMenu()
 }
 
-function onSwitchAccount() {
+async function onSwitchAccount() {
+  await endServerSession()
   clearAuth()
   closeMenu()
   router.push({ name: 'login' })
@@ -76,13 +92,25 @@ onUnmounted(() => {
       </nav>
 
       <div class="header-actions">
-        <RouterLink class="site-avatar" to="/about" :title="`关于 ${site.author}`">
-          <img :src="site.avatar" alt="站点作者" width="40" height="40" />
-        </RouterLink>
+        <button
+          class="theme-toggle"
+          type="button"
+          :title="isDark ? '切换为亮色' : '切换为暗色'"
+          :aria-label="isDark ? '切换为亮色' : '切换为暗色'"
+          @click="toggleTheme"
+        >
+          {{ isDark ? '☀' : '☾' }}
+        </button>
 
         <div v-if="!loggedIn" class="guest-auth">
           <RouterLink class="auth-link" :to="loginTo">登录</RouterLink>
-          <RouterLink class="auth-link auth-link--strong" to="/register">注册</RouterLink>
+          <RouterLink
+            v-if="site.publicRegistrationEnabled"
+            class="auth-link auth-link--strong"
+            to="/register"
+          >
+            注册
+          </RouterLink>
         </div>
 
         <div v-else class="account">
@@ -125,7 +153,7 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-soft);
 }
@@ -179,27 +207,30 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-elevated);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  background: var(--primary-soft);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-}
-
-.site-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid var(--highlight);
-  box-shadow: 0 0 0 3px rgba(255, 217, 61, 0.25);
-  flex-shrink: 0;
-}
-
-.site-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .guest-auth {
@@ -285,7 +316,7 @@ onUnmounted(() => {
   top: calc(100% + 8px);
   min-width: 160px;
   padding: 8px;
-  background: #fff;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   box-shadow: var(--shadow-card);
@@ -347,11 +378,6 @@ onUnmounted(() => {
 
   .account-name {
     display: none;
-  }
-
-  .site-avatar {
-    width: 36px;
-    height: 36px;
   }
 }
 </style>

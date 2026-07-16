@@ -27,14 +27,21 @@ const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
       <div class="meta">
         <time v-if="publishedAt" :datetime="article.publishedAt">{{ publishedAt }}</time>
         <span v-if="article.category" class="category">{{ article.category.name }}</span>
-        <span v-if="article.pinned" class="badge">置顶</span>
         <span v-if="article.viewCount != null" class="views">{{ article.viewCount }} 阅读</span>
       </div>
-      <h3 class="title">{{ article.title }}</h3>
+      <h3 class="title" :class="{ 'title--featured': article.recommended }">{{ article.title }}</h3>
       <p v-if="article.summary" class="summary">{{ article.summary }}</p>
-      <ul v-if="article.tags?.length" class="tags">
-        <li v-for="tag in article.tags" :key="tag.id">#{{ tag.name }}</li>
-      </ul>
+      <div
+        v-if="article.pinned || article.recommended || article.authorName || article.tags?.length"
+        class="tag-row"
+      >
+        <span v-if="article.pinned" class="badge badge--pinned">置顶</span>
+        <span v-if="article.recommended" class="badge badge--featured">精选</span>
+        <span v-if="article.authorName" class="author-tag">{{ article.authorName }}</span>
+        <ul v-if="article.tags?.length" class="tags">
+          <li v-for="tag in article.tags" :key="tag.id">#{{ tag.name }}</li>
+        </ul>
+      </div>
     </div>
   </RouterLink>
 </template>
@@ -46,7 +53,7 @@ const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
   align-items: flex-start;
   padding: 24px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-card);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
   text-decoration: none;
@@ -113,10 +120,23 @@ const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
   min-height: 24px;
   padding: 0 10px;
   border-radius: var(--radius-pill);
-  background: rgba(179, 136, 255, 0.16);
-  color: var(--accent-lilac);
   font-weight: 600;
   font-size: 0.82rem;
+  border: 1px solid transparent;
+}
+
+/* 置顶：玫红醒目，与分类桃橙、精选橙拉开色差 */
+.badge--pinned {
+  background: rgba(232, 67, 110, 0.18);
+  border-color: rgba(214, 48, 85, 0.55);
+  color: #c0395a;
+}
+
+/* 精选：暖橙描边，标题同色呼应 */
+.badge--featured {
+  background: rgba(232, 140, 40, 0.12);
+  border-color: rgba(232, 140, 40, 0.45);
+  color: #d97706;
 }
 
 .views {
@@ -132,6 +152,10 @@ const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
   letter-spacing: 0.01em;
 }
 
+.title--featured {
+  color: #e8871e;
+}
+
 .summary {
   margin: 8px 0 0;
   color: var(--text-muted);
@@ -143,11 +167,31 @@ const publishedAt = computed(() => formatDateTime(props.article.publishedAt))
   overflow: hidden;
 }
 
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0 0;
+}
+
+.author-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(111, 207, 151, 0.16);
+  color: var(--primary-strong, #2d9f6f);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
-  margin: 12px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
   color: var(--accent-lilac);

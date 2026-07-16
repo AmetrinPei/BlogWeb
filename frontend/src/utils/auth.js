@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 const TOKEN_KEY = 'blog_admin_token'
+const REFRESH_KEY = 'blog_refresh_token'
 const USER_KEY = 'blog_user'
 
 /** Bumps when session changes so UI can react. */
@@ -22,12 +23,31 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
+export function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY)
+}
+
+export function setRefreshToken(refreshToken) {
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_KEY, refreshToken)
+  } else {
+    localStorage.removeItem(REFRESH_KEY)
+  }
+}
+
+export function clearRefreshToken() {
+  localStorage.removeItem(REFRESH_KEY)
+}
+
 export function isLoggedIn() {
   return Boolean(getToken())
 }
 
-export function setAuthSession({ token, userId, username, role, displayName, avatarUrl }) {
+export function setAuthSession({ token, refreshToken, userId, username, role, displayName, avatarUrl }) {
   setToken(token)
+  if (refreshToken !== undefined) {
+    setRefreshToken(refreshToken)
+  }
   localStorage.setItem(
     USER_KEY,
     JSON.stringify({
@@ -78,6 +98,7 @@ export function canAccessAdmin() {
 
 export function clearAuth() {
   clearToken()
+  clearRefreshToken()
   localStorage.removeItem(USER_KEY)
   touchSession()
 }
@@ -102,11 +123,11 @@ export function isSafePublicRedirect(raw) {
   return true
 }
 
-/** Admin-area redirect. */
+/** Admin-area redirect under /admin, excluding login. */
 export function isSafeAdminRedirect(raw) {
-  if (typeof raw !== 'string') return false
-  if (!raw.startsWith('/admin') || raw.startsWith('/admin/login')) return false
-  if (raw.includes('://')) return false
+  if (typeof raw !== 'string' || !raw.startsWith('/admin')) return false
+  if (raw.startsWith('//') || raw.includes('://')) return false
+  if (raw === '/admin/login' || raw.startsWith('/admin/login?')) return false
   return true
 }
 

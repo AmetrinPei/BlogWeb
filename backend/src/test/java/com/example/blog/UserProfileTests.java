@@ -154,7 +154,8 @@ class UserProfileTests {
         mockMvc.perform(get("/api/articles/{id}", articleId))
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.authorName").value("展示名A"))
-                .andExpect(jsonPath("$.data.authorAvatarUrl").value("https://cdn.example/a.png"));
+                .andExpect(jsonPath("$.data.authorAvatarUrl").value("https://cdn.example/a.png"))
+                .andExpect(jsonPath("$.data.authorBio").value("简介"));
 
         mockMvc.perform(post("/api/articles/{id}/comments", articleId)
                         .header("Authorization", "Bearer " + adminToken)

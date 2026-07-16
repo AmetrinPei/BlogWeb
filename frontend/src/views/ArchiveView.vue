@@ -73,7 +73,7 @@ h1 {
   gap: 16px;
   padding: 18px 22px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
   text-decoration: none;

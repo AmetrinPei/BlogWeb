@@ -7,5 +7,5 @@ git push -u origin main
 
 
 git add .
-git commit -m "更新了 1搜索扩到摘要/正文；可选高亮 2输出RSS 3长文 TOC、代码高亮、骨架屏等"
+git commit -m "更新了 1楼中楼回复 2审核反垃圾 3媒体上传 4敏感词 / 验证码 / 审核 5图片上传与引用 6资料页 + 访客端登录/会话 7评论时间到分钟、楼层、置顶"
 git push

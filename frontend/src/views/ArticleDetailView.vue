@@ -267,6 +267,28 @@ watch(
         </li>
       </ul>
 
+      <div v-if="article.authorName" class="author-card">
+        <img
+          v-if="article.authorAvatarUrl"
+          class="author-card__avatar"
+          :src="article.authorAvatarUrl"
+          :alt="article.authorName"
+          width="56"
+          height="56"
+        />
+        <span
+          v-else
+          class="author-card__avatar author-card__avatar--fallback"
+          aria-hidden="true"
+        >
+          {{ article.authorName.slice(0, 1) }}
+        </span>
+        <div class="author-card__info">
+          <strong class="author-card__name">{{ article.authorName }}</strong>
+          <p v-if="article.authorBio" class="author-card__bio">{{ article.authorBio }}</p>
+        </div>
+      </div>
+
       <ArticleToc :items="tocItems" />
 
       <div ref="contentEl" class="content markdown-body" v-html="renderedHtml" />
@@ -411,7 +433,7 @@ watch(
 .panel {
   padding: 36px 32px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
 }
@@ -494,6 +516,57 @@ watch(
   text-decoration: underline;
 }
 
+.author-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(111, 207, 151, 0.08);
+  border: 1px solid var(--border-soft);
+}
+
+.author-card__avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-soft);
+}
+
+.author-card__avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-soft);
+  color: var(--primary-strong, #2d9f6f);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.author-card__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.author-card__name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.author-card__bio {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .content {
   margin-top: 28px;
   padding-top: 24px;
@@ -548,7 +621,7 @@ watch(
   padding: 0 16px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-pill);
-  background: #fff;
+  background: var(--bg-elevated);
   color: var(--text);
   font-weight: 600;
   cursor: pointer;
@@ -590,6 +663,19 @@ watch(
   resize: vertical;
   font-family: inherit;
   font-size: 0.95rem;
+  background: var(--bg-elevated);
+  color: var(--text);
+  caret-color: var(--text);
+}
+
+.comment-form textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.comment-form textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
 }
 
 .comment-form button {
@@ -668,7 +754,7 @@ watch(
 .pin-badge {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text);
+  color: #2d3436;
   background: var(--highlight);
   padding: 2px 8px;
   border-radius: 999px;
@@ -735,6 +821,19 @@ watch(
   resize: vertical;
   font-family: inherit;
   font-size: 0.9rem;
+  background: var(--bg-elevated);
+  color: var(--text);
+  caret-color: var(--text);
+}
+
+.reply-form textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.reply-form textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
 }
 
 .reply-actions {

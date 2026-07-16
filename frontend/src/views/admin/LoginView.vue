@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '@/api/auth'
+import { fetchSite } from '@/api/site'
 import {
   isLoggedIn,
   isSafeAdminRedirect,
@@ -18,6 +19,8 @@ const username = ref(isAdminLogin.value ? 'admin' : '')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
+/** Missing field → open (Plan). */
+const registrationEnabled = ref(true)
 
 function redirectTarget() {
   const raw = route.query.redirect
@@ -29,9 +32,18 @@ function redirectTarget() {
   return '/'
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (isLoggedIn()) {
     router.replace(redirectTarget())
+    return
+  }
+  try {
+    const data = await fetchSite()
+    if (data && typeof data.publicRegistrationEnabled === 'boolean') {
+      registrationEnabled.value = data.publicRegistrationEnabled
+    }
+  } catch {
+    // keep default open
   }
 })
 
@@ -46,6 +58,7 @@ async function onSubmit() {
     const data = await login(username.value.trim(), password.value)
     setAuthSession({
       token: data.token,
+      refreshToken: data.refreshToken,
       userId: data.userId,
       username: data.username,
       role: data.role,
@@ -98,7 +111,7 @@ const registerLink = computed(() => {
         {{ loading ? '登录中…' : '登录' }}
       </button>
 
-      <p class="links">
+      <p v-if="registrationEnabled" class="links">
         <RouterLink :to="registerLink">还没有账号？去注册</RouterLink>
       </p>
 

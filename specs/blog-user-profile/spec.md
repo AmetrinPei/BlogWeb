@@ -79,7 +79,7 @@
 | Refresh Token、服务端登出拉黑 / 吊销 | 见 `blog-auth-refresh`；本期登出以清除前端会话为主 |
 | 登录失败 / 全站接口限流中台 | 见 `blog-rate-limit` |
 | 管理员代改任意用户资料、用户列表 CRUD 后台 | 超出本期；仅本人资料 |
-| 修改登录用户名、改密独立流程（若需可列后续） | 本期聚焦公开资料与会话入口 |
+| 修改登录用户名、改密独立流程 | 改密见 `blog-password-change`；本期聚焦公开资料与会话入口 |
 | 新增独立 READER 角色或开放匿名评论 | 注册默认仍为 AUTHOR（与 auth-rbac 一致） |
 | 强制头像必须本站上传、媒体库选头像产品化 | URL 即可；上传复用 media-upload |
 | 主题切换、友链关于页配置 | 见 `blog-theme-switch` / `blog-friend-links` |
@@ -149,3 +149,4 @@
 | v1.0 | 2026-07-14 | 自需求文档 §九卡片起草 Draft；合并「用户资料」与「访客端登录/注册/回后台/登出切换账号」；锁定公开字段、本人读写、访客会话与 redirect 规则；OAuth/Refresh/社交不做 | |
 | v1.1 | 2026-07-14 | Spec / Plan / Tasks 齐套 Approved；Plan 锁定 `/api/me`、三字段长度、双登录场景与 Header 会话 | |
 | v1.2 | 2026-07-14 | Implemented；AC 勾选；`UserProfileTests` + `acceptance-user-profile.mjs`；访客 Header 会话与 `/profile` | |
+| v1.3 | 2026-07-15 | Non-Goals：改密指向独立 Spec `blog-password-change` | |

@@ -1,0 +1,28 @@
+# Production profile: activate with spring.profiles.active=prod
+# Required env: JWT_SECRET, DB_PASSWORD, ADMIN_PASSWORD, BLOG_SITE_BASE_URL
+# Optional: BLOG_CORS_ALLOWED_ORIGIN_PATTERNS (comma-separated), BLOG_PUBLIC_REGISTRATION_ENABLED
+
+spring:
+  datasource:
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+blog:
+  admin:
+    password: ${ADMIN_PASSWORD}
+  jwt:
+    secret: ${JWT_SECRET}
+  auth:
+    public-registration-enabled: ${BLOG_PUBLIC_REGISTRATION_ENABLED:false}
+  cors:
+    # Empty by default (same-origin reverse proxy). Override via BLOG_CORS_ALLOWED_ORIGIN_PATTERNS.
+    allowed-origin-patterns: []
+  site:
+    base-url: ${BLOG_SITE_BASE_URL}
+
+logging:
+  level:
+    root: INFO
+    com.example.blog: INFO

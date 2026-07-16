@@ -12,6 +12,16 @@ Desktop.ini
 # Spec / docs tooling
 node_modules/
 
+# Local secrets (use .env.example as template)
+.env
+.env.local
+deploy/.env
+
+# TLS private material (keep README in ssl/)
+deploy/nginx/ssl/*.pem
+deploy/nginx/ssl/*.key
+deploy/nginx/ssl/*.crt
+
 # Local media uploads (blog-media-upload)
 backend/data/uploads/
 backend/data/uploads-test/

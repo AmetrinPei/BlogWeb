@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController {
 
     private final ProfileService profileService;
+    private final PasswordChangeService passwordChangeService;
 
-    public MeController(ProfileService profileService) {
+    public MeController(ProfileService profileService, PasswordChangeService passwordChangeService) {
         this.profileService = profileService;
+        this.passwordChangeService = passwordChangeService;
     }
 
     @GetMapping
@@ -26,5 +28,10 @@ public class MeController {
     @PutMapping
     public Result<ProfileResponse> updateMe(@Valid @RequestBody ProfileUpdateRequest request) {
         return Result.ok(profileService.updateMe(request));
+    }
+
+    @PutMapping("/password")
+    public Result<ChangePasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return Result.ok(passwordChangeService.changePassword(request));
     }
 }

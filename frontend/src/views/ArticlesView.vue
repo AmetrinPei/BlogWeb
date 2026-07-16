@@ -288,7 +288,7 @@ h1 {
   padding: 0 12px;
   border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg-elevated);
   color: var(--text);
   outline: none;
 }
@@ -321,7 +321,7 @@ h1 {
 }
 
 .btn-ghost {
-  background: #fff;
+  background: var(--bg-elevated);
   color: var(--text-muted);
   border: 1px solid var(--border-soft);
 }
@@ -344,7 +344,7 @@ h1 {
 .empty {
   padding: 36px 28px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
   text-align: center;

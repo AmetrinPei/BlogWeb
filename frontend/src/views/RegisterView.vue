@@ -1,17 +1,21 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { register } from '@/api/auth'
+import { useSiteSettings } from '@/composables/useSiteSettings'
 import { isSafePublicRedirect, setAuthSession } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
+const { site } = useSiteSettings()
 
 const username = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref('')
+
+const registrationOpen = computed(() => site.value.publicRegistrationEnabled !== false)
 
 function redirectTarget() {
   const raw = route.query.redirect
@@ -21,6 +25,10 @@ function redirectTarget() {
 
 async function onSubmit() {
   error.value = ''
+  if (!registrationOpen.value) {
+    error.value = '当前不开放注册'
+    return
+  }
   const name = username.value.trim()
   if (!name || !password.value) {
     error.value = '请输入用户名和密码'
@@ -36,6 +44,7 @@ async function onSubmit() {
     const data = await register(name, password.value)
     setAuthSession({
       token: data.token,
+      refreshToken: data.refreshToken,
       userId: data.userId,
       username: data.username,
       role: data.role,
@@ -55,11 +64,18 @@ async function onSubmit() {
   <section class="page content-wide">
     <form class="card" @submit.prevent="onSubmit">
       <h1>注册账号</h1>
-      <p class="hint">注册后即可评论与写作；默认回到访客站</p>
+      <p v-if="!registrationOpen" class="hint closed">当前不开放注册，请联系站点管理员。</p>
+      <p v-else class="hint">注册后即可评论与写作；默认回到访客站</p>
 
       <label class="field">
         <span>用户名</span>
-        <input v-model="username" type="text" autocomplete="username" required />
+        <input
+          v-model="username"
+          type="text"
+          autocomplete="username"
+          required
+          :disabled="!registrationOpen"
+        />
       </label>
 
       <label class="field">
@@ -69,6 +85,7 @@ async function onSubmit() {
           type="password"
           autocomplete="new-password"
           required
+          :disabled="!registrationOpen"
         />
       </label>
 
@@ -79,12 +96,13 @@ async function onSubmit() {
           type="password"
           autocomplete="new-password"
           required
+          :disabled="!registrationOpen"
         />
       </label>
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button class="submit" type="submit" :disabled="loading">
+      <button class="submit" type="submit" :disabled="loading || !registrationOpen">
         {{ loading ? '注册中…' : '注册' }}
       </button>
 
@@ -109,7 +127,7 @@ async function onSubmit() {
   margin: 0 auto;
   padding: 32px 28px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
 }
@@ -124,6 +142,10 @@ h1 {
   margin: 8px 0 22px;
   color: var(--text-muted);
   font-size: 0.92rem;
+}
+
+.hint.closed {
+  color: #d63031;
 }
 
 .field {

@@ -26,7 +26,7 @@
 .panel {
   padding: 36px 32px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
 }

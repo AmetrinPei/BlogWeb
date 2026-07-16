@@ -24,6 +24,7 @@ public class ArticleResponse {
     private final Long authorId;
     private final String authorName;
     private final String authorAvatarUrl;
+    private final String authorBio;
     private final LocalDateTime publishedAt;
     private final CategoryResponse category;
     private final List<TagResponse> tags;
@@ -41,6 +42,7 @@ public class ArticleResponse {
             Long authorId,
             String authorName,
             String authorAvatarUrl,
+            String authorBio,
             LocalDateTime publishedAt,
             CategoryResponse category,
             List<TagResponse> tags
@@ -57,6 +59,7 @@ public class ArticleResponse {
         this.authorId = authorId;
         this.authorName = authorName;
         this.authorAvatarUrl = authorAvatarUrl;
+        this.authorBio = authorBio;
         this.publishedAt = publishedAt;
         this.category = category;
         this.tags = tags;
@@ -79,6 +82,7 @@ public class ArticleResponse {
         Long authorId = author != null ? author.getId() : null;
         String authorName = author != null ? author.resolveDisplayName() : null;
         String authorAvatarUrl = author != null ? author.getAvatarUrl() : null;
+        String authorBio = author != null ? author.getBio() : null;
         return new ArticleResponse(
                 article.getId(),
                 article.getTitle(),
@@ -92,6 +96,7 @@ public class ArticleResponse {
                 authorId,
                 authorName,
                 authorAvatarUrl,
+                authorBio,
                 article.getPublishedAt(),
                 CategoryResponse.from(article.getCategory()),
                 tags
@@ -156,6 +161,10 @@ public class ArticleResponse {
 
     public String getAuthorAvatarUrl() {
         return authorAvatarUrl;
+    }
+
+    public String getAuthorBio() {
+        return authorBio;
     }
 
     public LocalDateTime getPublishedAt() {

@@ -9,3 +9,8 @@ export function getMe() {
 export function updateMe(payload) {
   return http.put('/me', payload)
 }
+
+/** PUT /api/me/password — body: { currentPassword, newPassword, confirmPassword } */
+export function changePassword(payload) {
+  return http.put('/me/password', payload)
+}

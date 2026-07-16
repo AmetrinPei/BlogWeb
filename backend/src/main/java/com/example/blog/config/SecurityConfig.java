@@ -47,7 +47,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/feed.xml").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/logout"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/admin/auth/login").permitAll()
                         .requestMatchers("/api/admin/categories/**", "/api/admin/tags/**", "/api/admin/site/**")
                         .hasRole("ADMIN")

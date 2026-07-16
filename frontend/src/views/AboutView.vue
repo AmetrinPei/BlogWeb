@@ -1,22 +1,33 @@
 <script setup>
-import { siteConfig } from '@/config/site'
+import { computed } from 'vue'
+import AboutAvatar from '@/components/AboutAvatar.vue'
+import { useSiteSettings } from '@/composables/useSiteSettings'
+
+const { site } = useSiteSettings()
+
+const avatarSrc = computed(() => site.value.aboutAvatarUrl || site.value.avatar)
+const aboutTitle = computed(() => site.value.aboutTitle || '关于我')
+const displayName = computed(() => site.value.author || '')
+const aboutIntro = computed(() => (site.value.aboutText || '').trim())
+const highlights = computed(() => site.value.aboutHighlights || [])
+const friendLinks = computed(() => site.value.friendLinks || [])
 </script>
 
 <template>
   <section class="page content-about">
     <article class="panel">
-      <img class="avatar" :src="siteConfig.avatar" :alt="siteConfig.author" width="96" height="96" />
-      <h1>{{ siteConfig.about.title }}</h1>
-      <p class="name">{{ siteConfig.author }}</p>
-      <p class="intro">{{ siteConfig.about.intro }}</p>
-      <ul class="highlights">
-        <li v-for="(item, index) in siteConfig.about.highlights" :key="index">
+      <AboutAvatar :src="avatarSrc" :alt="displayName" />
+      <h1>{{ aboutTitle }}</h1>
+      <p v-if="displayName" class="name">{{ displayName }}</p>
+      <p v-if="aboutIntro" class="intro">{{ aboutIntro }}</p>
+      <ul v-if="highlights.length" class="highlights">
+        <li v-for="(item, index) in highlights" :key="index">
           {{ item }}
         </li>
       </ul>
-      <div v-if="siteConfig.socials.length" class="socials">
+      <div v-if="site.socials.length" class="socials">
         <a
-          v-for="item in siteConfig.socials"
+          v-for="item in site.socials"
           :key="item.href"
           class="social"
           :href="item.href"
@@ -26,6 +37,18 @@ import { siteConfig } from '@/config/site'
           {{ item.label }}
         </a>
       </div>
+
+      <section v-if="friendLinks.length" class="friends" aria-label="友情链接">
+        <h2>友情链接</h2>
+        <ul>
+          <li v-for="item in friendLinks" :key="item.url + item.name">
+            <a :href="item.url" target="_blank" rel="noopener noreferrer">
+              {{ item.name }}
+            </a>
+            <p v-if="item.description" class="friend-desc">{{ item.description }}</p>
+          </li>
+        </ul>
+      </section>
     </article>
   </section>
 </template>
@@ -34,19 +57,10 @@ import { siteConfig } from '@/config/site'
 .panel {
   padding: 40px 32px;
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--bg-elevated);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-soft);
   text-align: center;
-}
-
-.avatar {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  border: 3px solid var(--highlight);
-  box-shadow: 0 0 0 4px rgba(255, 217, 61, 0.2);
 }
 
 h1 {
@@ -112,5 +126,52 @@ h1 {
   text-decoration: none;
   color: var(--text);
   font-size: 0.9rem;
+}
+
+.friends {
+  margin: 32px auto 0;
+  max-width: 32em;
+  text-align: left;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 24px;
+}
+
+.friends h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.friends ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friends li {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-soft);
+}
+
+.friends li:last-child {
+  border-bottom: none;
+}
+
+.friends a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.friends a:hover {
+  color: var(--accent-peach);
+}
+
+.friend-desc {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 </style>
